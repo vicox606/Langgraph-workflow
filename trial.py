@@ -26,7 +26,6 @@ llm = ChatOllama(
 )
 
 def planner_node(state: BlogState) -> dict:
-    """Creates a structured outline for the blog post."""
     print(f"\n  PLANNER  — Creating outline for: '{state['topic']}'")
     print(f"   (using {MODEL_NAME} via Ollama)")
 
@@ -44,7 +43,6 @@ def planner_node(state: BlogState) -> dict:
 
 
 def writer_node(state: BlogState) -> dict:
-    """Writes the first draft based on the outline."""
     print(f"\n   WRITER  — Writing draft (revision #{state['revision_count'] + 1})")
 
     messages = [
@@ -63,7 +61,6 @@ def writer_node(state: BlogState) -> dict:
 
 
 def critic_node(state: BlogState) -> dict:
-    """Reviews the draft and gives a score + actionable feedback."""
     print(f"\n  CRITIC   — Reviewing draft...")
 
     messages = [
@@ -99,7 +96,6 @@ def critic_node(state: BlogState) -> dict:
 
 
 def polisher_node(state: BlogState) -> dict:
-    """Applies final polish — formatting, intro hook, conclusion."""
     print(f"\n POLISHER — Applying final polish...")
 
     messages = [
@@ -117,7 +113,6 @@ def polisher_node(state: BlogState) -> dict:
 
 
 def route_after_critic(state: BlogState) -> str:
-    """Decides: loop back to writer, or proceed to polisher."""
     if state["score"] < 7 and state["revision_count"] < 2:
         print(f"\n Score {state['score']}/10 — sending back for revision...")
         return "writer"
@@ -155,6 +150,18 @@ def run_workflow(topic: str):
 
     workflow = build_workflow()
 
+    # Generate workflow PNG
+    try:
+        png_data = workflow.get_graph().draw_mermaid_png()
+
+        with open("blog_workflow.png", "wb") as f:
+            f.write(png_data)
+
+        print("\n Workflow diagram saved as: blog_workflow.png")
+
+    except Exception as e:
+        print(f"\n Could not generate PNG: {e}")
+
     initial_state: BlogState = {
         "topic": topic,
         "outline": "",
@@ -167,17 +174,9 @@ def run_workflow(topic: str):
 
     final_state = workflow.invoke(initial_state)
 
-    print("\n" + "═" * 60)
-    print("FINAL BLOG POST")
-    print("═" * 60)
-    print(final_state["final_post"])
-    print("\n" + "═" * 60)
-    print(f"  Model    : {MODEL_NAME}")
-    print(f"  Revisions: {final_state['revision_count']}  |  Final score: {final_state['score']}/10")
-    print("═" * 60)
-
-    return final_state
-
 
 if __name__ == "__main__":
     run_workflow("Why every developer should learn Machine Learning")
+
+
+
